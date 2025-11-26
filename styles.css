@@ -1,0 +1,249 @@
+:root {
+    --primary-bg: #f0f2f5;
+    --text-color: #333;
+    --accent-color: #007bff;
+    --success-color: #28a745;
+    /* Green */
+    --danger-color: #dc3545;
+    /* Red */
+    --special-color: #007bff;
+    /* Blue */
+    --card-bg: #ffffff;
+}
+
+* {
+    box-sizing: border-box;
+    touch-action: manipulation;
+    /* Prevent double-tap zoom */
+}
+
+body {
+    margin: 0;
+    padding: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    background-color: var(--primary-bg);
+    color: var(--text-color);
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    /* Prevent scrolling during game */
+}
+
+.screen {
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: 100%;
+    padding: 20px;
+    position: absolute;
+    top: 0;
+    left: 0;
+}
+
+.screen.active {
+    display: flex;
+}
+
+h1 {
+    font-size: 2.5rem;
+    margin-bottom: 1rem;
+    text-align: center;
+}
+
+h2 {
+    font-size: 2rem;
+    margin-bottom: 1rem;
+}
+
+p {
+    font-size: 1.2rem;
+    margin-bottom: 1.5rem;
+    text-align: center;
+    max-width: 800px;
+}
+
+/* Buttons */
+.btn {
+    background-color: var(--accent-color);
+    color: white;
+    border: none;
+    border-radius: 12px;
+    padding: 20px 40px;
+    font-size: 1.5rem;
+    cursor: pointer;
+    margin: 10px;
+    transition: transform 0.1s, opacity 0.2s;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.btn:active {
+    transform: scale(0.95);
+}
+
+.btn-secondary {
+    background-color: #6c757d;
+}
+
+.btn-large {
+    width: 80%;
+    max-width: 400px;
+}
+
+/* Level Selection Grid */
+.level-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 20px;
+    width: 100%;
+    max-width: 800px;
+}
+
+@media (min-width: 768px) {
+    .level-grid {
+        grid-template-columns: repeat(3, 1fr);
+    }
+}
+
+/* Game Area */
+#stimulus-area {
+    width: 100%;
+    height: 60%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: #e9ecef;
+    border-radius: 20px;
+    margin-bottom: 20px;
+    font-size: 3rem;
+    font-weight: bold;
+    color: #555;
+    transition: background-color 0.1s;
+    position: relative;
+}
+
+/* Stimulus States */
+.stimulus-green {
+    background-color: var(--success-color) !important;
+    color: white !important;
+}
+
+.stimulus-red {
+    background-color: var(--danger-color) !important;
+    color: white !important;
+}
+
+.stimulus-blue {
+    background-color: var(--special-color) !important;
+    color: white !important;
+}
+
+/* Math Overlay */
+#math-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(255, 255, 255, 0.95);
+    display: none;
+    /* Flex when active */
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    z-index: 100;
+}
+
+#math-problem {
+    font-size: 4rem;
+    margin-bottom: 30px;
+}
+
+.math-options {
+    display: flex;
+    gap: 20px;
+    flex-wrap: wrap;
+    justify-content: center;
+}
+
+.math-btn {
+    font-size: 2rem;
+    padding: 30px;
+    min-width: 120px;
+}
+
+/* Ranking Table */
+table {
+    width: 100%;
+    max-width: 800px;
+    border-collapse: collapse;
+    margin-top: 20px;
+    background: white;
+    border-radius: 10px;
+    overflow: hidden;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+th,
+td {
+    padding: 15px;
+    text-align: left;
+    border-bottom: 1px solid #ddd;
+    font-size: 1.2rem;
+}
+
+th {
+    background-color: #f8f9fa;
+    font-weight: bold;
+}
+
+.highlight-row {
+    background-color: #e8f0fe;
+    font-weight: bold;
+}
+
+/* Utility */
+.hidden {
+    display: none !important;
+}
+
+#countdown {
+    font-size: 6rem;
+    font-weight: bold;
+    color: var(--accent-color);
+}
+
+.swipe-hint {
+    position: absolute;
+    font-size: 2rem;
+    opacity: 0.5;
+    pointer-events: none;
+}
+
+.swipe-left {
+    left: 20px;
+    top: 50%;
+    transform: translateY(-50%);
+}
+
+.swipe-right {
+    right: 20px;
+    top: 50%;
+    transform: translateY(-50%);
+}
+
+/* Result Stats */
+.stat-box {
+    background: white;
+    padding: 20px;
+    border-radius: 10px;
+    margin: 10px;
+    width: 100%;
+    max-width: 600px;
+    display: flex;
+    justify-content: space-between;
+    font-size: 1.2rem;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
