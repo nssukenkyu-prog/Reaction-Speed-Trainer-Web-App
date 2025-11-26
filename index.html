@@ -12,89 +12,89 @@
 
     <!-- 1. Setup Screen -->
     <div id="setup-screen" class="screen active">
-        <h1>REACTION TRAINER</h1>
+        <h1>反応速度トレーニング</h1>
 
         <div class="input-group">
-            <input type="text" id="nickname-input" placeholder="NICKNAME" maxlength="10">
+            <input type="text" id="nickname-input" placeholder="ニックネームを入力" maxlength="10">
         </div>
 
         <div class="level-grid">
             <!-- Level 1 -->
             <div class="level-card" onclick="app.startLevel(1)">
                 <div class="level-header">
-                    <span class="level-num">Level 01</span>
+                    <span class="level-num">レベル 1</span>
                     <span class="level-badge">x1.0</span>
                 </div>
-                <h3 class="level-title">Simple Light</h3>
-                <p class="level-desc">光ったらタップ。基礎反応速度。</p>
+                <h3 class="level-title">光に反応</h3>
+                <p class="level-desc">光ったらタップ！基礎スピード。</p>
             </div>
 
             <!-- Level 2 -->
             <div class="level-card" onclick="app.startLevel(2)">
                 <div class="level-header">
-                    <span class="level-num">Level 02</span>
+                    <span class="level-num">レベル 2</span>
                     <span class="level-badge">x1.2</span>
                 </div>
-                <h3 class="level-title">Simple Sound</h3>
-                <p class="level-desc">音が鳴ったらタップ。聴覚反応。</p>
+                <h3 class="level-title">音に反応</h3>
+                <p class="level-desc">音が鳴ったらタップ！耳で判断。</p>
             </div>
 
             <!-- Level 3 -->
             <div class="level-card" onclick="app.startLevel(3)">
                 <div class="level-header">
-                    <span class="level-num">Level 03</span>
+                    <span class="level-num">レベル 3</span>
                     <span class="level-badge">x1.4</span>
                 </div>
-                <h3 class="level-title">Mixed Stimuli</h3>
-                <p class="level-desc">光か音、どちらかで反応。</p>
+                <h3 class="level-title">光と音のミックス</h3>
+                <p class="level-desc">光か音、どっちか出たらタップ。</p>
             </div>
 
             <!-- Level 4 -->
             <div class="level-card" onclick="app.startLevel(4)">
                 <div class="level-header">
-                    <span class="level-num">Level 04</span>
+                    <span class="level-num">レベル 4</span>
                     <span class="level-badge">x1.6</span>
                 </div>
-                <h3 class="level-title">Go / No-Go</h3>
-                <p class="level-desc">緑はタップ、赤は無視。判断力。</p>
+                <h3 class="level-title">赤はガマン！</h3>
+                <p class="level-desc">緑はタップ、赤は無視。</p>
             </div>
 
             <!-- Level 5 -->
             <div class="level-card" onclick="app.startLevel(5)">
                 <div class="level-header">
-                    <span class="level-num">Level 05</span>
+                    <span class="level-num">レベル 5</span>
                     <span class="level-badge">x1.8</span>
                 </div>
-                <h3 class="level-title">Math & Pace</h3>
-                <p class="level-desc">連続反応後に足し算。</p>
+                <h3 class="level-title">連続＋たし算</h3>
+                <p class="level-desc">連続タップの後に計算があるよ。</p>
             </div>
 
             <!-- Level 6 -->
             <div class="level-card" onclick="app.startLevel(6)">
                 <div class="level-header">
-                    <span class="level-num">Level 06</span>
+                    <span class="level-num">レベル 6</span>
                     <span class="level-badge">x2.0</span>
                 </div>
-                <h3 class="level-title">Complex</h3>
-                <p class="level-desc">複合条件判断 + 掛け算。</p>
+                <h3 class="level-title">超ムズカシイ</h3>
+                <p class="level-desc">複雑なルール＋かけ算。</p>
             </div>
         </div>
 
-        <button class="btn btn-outline" onclick="app.showRanking()">LEADERBOARD</button>
+        <button class="btn btn-outline" onclick="app.showRanking()">ランキングを見る</button>
     </div>
 
     <!-- 2. Game Screen -->
     <div id="game-screen" class="screen">
-        <div style="position: absolute; top: 20px; left: 20px; color: #64748b;">
+        <div style="position: absolute; top: 20px; left: 20px; color: #94a3b8;">
             <span id="game-level-indicator">LV.1</span>
         </div>
 
         <div id="game-container">
             <div id="stimulus-display">
-                <span id="stimulus-icon">READY</span>
+                <span id="stimulus-icon">準備OK?</span>
             </div>
-            <div id="swipe-hints" class="hidden" style="margin-top: 20px; color: #64748b;">
-                ← Red | Blue →
+            <div id="swipe-hints" class="hidden" style="margin-top: 20px; color: #94a3b8;">
+                ← 赤なら左 | 青なら右 →
             </div>
         </div>
 
@@ -109,60 +109,60 @@
 
     <!-- 3. Result Screen -->
     <div id="result-screen" class="screen">
-        <h2>RESULT</h2>
+        <h2>結果発表</h2>
 
         <div class="result-card">
             <div class="score-display" id="final-score">0</div>
 
             <div class="stats-grid">
                 <div class="stat-item">
-                    <span class="stat-label">AVG REACTION</span>
+                    <span class="stat-label">平均反応スピード</span>
                     <span class="stat-value" id="res-time">0 ms</span>
                 </div>
                 <div class="stat-item">
-                    <span class="stat-label">ACCURACY</span>
+                    <span class="stat-label">正解率</span>
                     <span class="stat-value" id="res-acc">0%</span>
                 </div>
                 <div class="stat-item">
-                    <span class="stat-label">MISS</span>
+                    <span class="stat-label">ミス</span>
                     <span class="stat-value" id="res-miss">0</span>
                 </div>
                 <div class="stat-item">
-                    <span class="stat-label">RANK</span>
+                    <span class="stat-label">ランク</span>
                     <span class="stat-value" id="res-rank">-</span>
                 </div>
             </div>
         </div>
 
-        <button class="btn" onclick="app.retryLevel()">RETRY</button>
-        <button class="btn btn-outline" onclick="app.toTitle()">HOME</button>
+        <button class="btn" onclick="app.retryLevel()">もう一度やる</button>
+        <button class="btn btn-outline" onclick="app.toTitle()">最初の画面へ</button>
 
         <button class="btn-text" onclick="app.toggleScoreDetail()">スコアの計算方法を見る</button>
 
         <div id="score-detail" class="hidden"
             style="background: #1e293b; padding: 20px; border-radius: 12px; margin-top: 10px; max-width: 500px; text-align: left;">
             <p style="font-size: 0.9rem; margin: 0;">
-                <strong>Score Formula:</strong><br>
-                (10000 ÷ 平均反応時間) × 正答率 × レベル倍率<br>
+                <strong>スコアの計算式:</strong><br>
+                (10000 ÷ 平均タイム) × 正解率 × レベル倍率<br>
                 - ペナルティ (ミス × 500点)<br>
-                + ボーナス (安定性など)
+                + ボーナス (安定していると加点)
             </p>
         </div>
     </div>
 
     <!-- 4. Ranking Screen -->
     <div id="ranking-screen" class="screen">
-        <h2>LEADERBOARD</h2>
+        <h2>ランキング</h2>
 
         <div style="margin-bottom: 20px; display: flex; gap: 10px;">
             <select id="rank-level-select" onchange="app.loadRanking(this.value)"
                 style="padding: 10px; border-radius: 8px; background: #1e293b; color: white; border: 1px solid #334155;">
-                <option value="1">Level 1</option>
-                <option value="2">Level 2</option>
-                <option value="3">Level 3</option>
-                <option value="4">Level 4</option>
-                <option value="5">Level 5</option>
-                <option value="6">Level 6</option>
+                <option value="1">レベル 1</option>
+                <option value="2">レベル 2</option>
+                <option value="3">レベル 3</option>
+                <option value="4">レベル 4</option>
+                <option value="5">レベル 5</option>
+                <option value="6">レベル 6</option>
             </select>
         </div>
 
@@ -172,7 +172,7 @@
             </table>
         </div>
 
-        <button class="btn btn-outline" onclick="app.toTitle()" style="margin-top: 20px;">BACK</button>
+        <button class="btn btn-outline" onclick="app.toTitle()" style="margin-top: 20px;">戻る</button>
     </div>
 
     <script type="module" src="app.js"></script>
