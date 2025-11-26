@@ -5,14 +5,14 @@ class ReactionApp {
         this.currentLevel = 1;
         this.trials = [];
         this.maxTrials = 5;
-        this.gameState = 'idle'; // idle, waiting, reaction, math, finished
+        this.gameState = 'idle';
         this.stimulusStart = 0;
         this.timeoutIds = [];
+        this.nickname = localStorage.getItem('reaction_nickname') || '';
 
-        // Audio Context
         this.audioCtx = new (window.AudioContext || window.webkitAudioContext)();
 
-        // DOM Elements
+        // UI Elements
         this.screens = {
             setup: document.getElementById('setup-screen'),
             game: document.getElementById('game-screen'),
@@ -20,17 +20,27 @@ class ReactionApp {
             ranking: document.getElementById('ranking-screen')
         };
 
-        this.stimulusArea = document.getElementById('stimulus-area');
-        this.stimulusText = document.getElementById('stimulus-text');
-        this.mathOverlay = document.getElementById('math-overlay');
+        this.els = {
+            stimulusDisplay: document.getElementById('stimulus-display'),
+            stimulusIcon: document.getElementById('stimulus-icon'),
+            mathModal: document.getElementById('math-modal'),
+            nicknameInput: document.getElementById('nickname-input'),
+            swipeHints: document.getElementById('swipe-hints')
+        };
 
-        // Bind events
-        this.stimulusArea.addEventListener('touchstart', (e) => this.handleInput(e, 'touch'), { passive: false });
-        this.stimulusArea.addEventListener('mousedown', (e) => this.handleInput(e, 'click'));
+        // Init Nickname
+        this.els.nicknameInput.value = this.nickname;
+        this.els.nicknameInput.addEventListener('change', (e) => {
+            this.nickname = e.target.value.trim();
+            localStorage.setItem('reaction_nickname', this.nickname);
+        });
 
-        // Swipe detection variables
+        // Input Bindings
+        this.els.stimulusDisplay.addEventListener('touchstart', (e) => this.handleTouchStart(e), { passive: false });
+        this.els.stimulusDisplay.addEventListener('touchend', (e) => this.handleTouchEnd(e), { passive: false });
+        this.els.stimulusDisplay.addEventListener('mousedown', (e) => this.handleClick(e));
+
         this.touchStartX = 0;
-        this.touchStartY = 0;
     }
 
     // --- Navigation ---
@@ -43,6 +53,11 @@ class ReactionApp {
         this.showScreen('setup');
     }
 
+    toggleScoreDetail() {
+        const el = document.getElementById('score-detail');
+        el.classList.toggle('hidden');
+    }
+
     // --- Audio ---
     playBeep() {
         if (this.audioCtx.state === 'suspended') this.audioCtx.resume();
@@ -50,7 +65,7 @@ class ReactionApp {
         const gain = this.audioCtx.createGain();
         osc.connect(gain);
         gain.connect(this.audioCtx.destination);
-        osc.frequency.value = 880; // A5
+        osc.frequency.value = 880;
         gain.gain.value = 0.1;
         osc.start();
         osc.stop(this.audioCtx.currentTime + 0.1);
@@ -58,25 +73,24 @@ class ReactionApp {
 
     // --- Game Logic ---
     startLevel(level) {
+        if (!this.nickname) {
+            // Optional: Force nickname? For now, allow empty (Anonymous)
+        }
+
         this.currentLevel = level;
         this.trials = [];
         this.gameState = 'idle';
 
-        // Set trial counts based on level
         const trialCounts = { 1: 5, 2: 5, 3: 7, 4: 8, 5: 10, 6: 10 };
         this.maxTrials = trialCounts[level];
 
         this.showScreen('game');
-        document.getElementById('level-title').textContent = `Level ${level}`;
+        document.getElementById('game-level-indicator').textContent = `LV.${level}`;
 
         // Reset UI
-        this.stimulusArea.className = '';
-        this.stimulusText.textContent = '';
-        this.mathOverlay.style.display = 'none';
-
-        // Show swipe hints for Lv6
-        const hints = document.querySelectorAll('.swipe-hint');
-        hints.forEach(h => h.classList.toggle('hidden', level !== 6));
+        this.resetStimulus();
+        this.els.mathModal.classList.add('hidden');
+        this.els.swipeHints.classList.toggle('hidden', level !== 6);
 
         this.startCountdown();
     }
@@ -85,19 +99,23 @@ class ReactionApp {
         this.startLevel(this.currentLevel);
     }
 
+    resetStimulus() {
+        this.els.stimulusDisplay.className = '';
+        this.els.stimulusIcon.textContent = '';
+    }
+
     startCountdown() {
-        const el = document.getElementById('countdown');
-        el.classList.remove('hidden');
+        this.resetStimulus();
+        this.els.stimulusIcon.textContent = '3';
         let count = 3;
-        el.textContent = count;
 
         const tick = () => {
             count--;
             if (count > 0) {
-                el.textContent = count;
+                this.els.stimulusIcon.textContent = count;
                 this.timeoutIds.push(setTimeout(tick, 1000));
             } else {
-                el.classList.add('hidden');
+                this.els.stimulusIcon.textContent = '';
                 this.nextTrial();
             }
         };
@@ -111,10 +129,8 @@ class ReactionApp {
         }
 
         this.gameState = 'waiting';
-        this.stimulusArea.className = '';
-        this.stimulusText.textContent = '...';
+        this.resetStimulus();
 
-        // Random delay 1-3s (Lv5 is faster: 0.8-1.5s)
         const minDelay = this.currentLevel === 5 ? 800 : 1000;
         const maxDelay = this.currentLevel === 5 ? 1500 : 3000;
         const delay = Math.random() * (maxDelay - minDelay) + minDelay;
@@ -127,339 +143,262 @@ class ReactionApp {
         this.stimulusStart = performance.now();
         this.currentStimulus = this.generateStimulus(this.currentLevel);
 
-        // Apply visual
+        // Visual
         if (this.currentStimulus.color) {
-            this.stimulusArea.classList.add(`stimulus-${this.currentStimulus.color}`);
+            this.els.stimulusDisplay.classList.add(`stimulus-${this.currentStimulus.color}`);
         }
 
-        // Apply audio
+        // Audio
         if (this.currentStimulus.sound) {
             this.playBeep();
+            if (!this.currentStimulus.color) {
+                this.els.stimulusIcon.textContent = '♪';
+            }
         }
-
-        // Text (optional, mostly for debugging or clarity)
-        this.stimulusText.textContent = this.currentStimulus.text || '';
     }
 
     generateStimulus(level) {
-        // Returns { type: 'go'|'no-go'|'left'|'right', color: 'green'|'red'|'blue'|null, sound: bool, text: str }
         const r = Math.random();
-
         switch (level) {
-            case 1: // Light only
-                return { type: 'go', color: 'green', sound: false };
-            case 2: // Sound only
-                return { type: 'go', color: null, sound: true, text: '♪' };
-            case 3: // Light or Sound
-                return r > 0.5
-                    ? { type: 'go', color: 'green', sound: false }
-                    : { type: 'go', color: null, sound: true, text: '♪' };
-            case 4: // Inhibition
-                return r > 0.7
-                    ? { type: 'no-go', color: 'red', sound: false } // 30% No-Go
-                    : { type: 'go', color: 'green', sound: false };
-            case 5: // Continuous + Math
-                return { type: 'go', color: 'green', sound: false };
-            case 6: // Complex
-                // Green+Sound -> Tap (Go)
-                // Red+Sound -> Left
-                // Blue+Silent -> Right
+            case 1: return { type: 'go', color: 'green', sound: false };
+            case 2: return { type: 'go', color: null, sound: true };
+            case 3: return r > 0.5 ? { type: 'go', color: 'green', sound: false } : { type: 'go', color: null, sound: true };
+            case 4: return r > 0.7 ? { type: 'no-go', color: 'red', sound: false } : { type: 'go', color: 'green', sound: false };
+            case 5: return { type: 'go', color: 'green', sound: false };
+            case 6:
                 if (r < 0.4) return { type: 'go', color: 'green', sound: true };
                 if (r < 0.7) return { type: 'left', color: 'red', sound: true };
                 return { type: 'right', color: 'blue', sound: false };
         }
     }
 
-    handleInput(e, inputType) {
+    // --- Input Handling ---
+    handleClick(e) {
+        if (this.currentLevel === 6) return; // Lv6 uses swipes (touch)
+        this.processInput('tap');
+    }
+
+    handleTouchStart(e) {
+        if (this.gameState !== 'reaction' && this.gameState !== 'waiting') return;
+        this.touchStartX = e.changedTouches[0].screenX;
+
+        if (this.currentLevel < 6) {
+            e.preventDefault(); // Prevent ghost clicks
+            this.processInput('tap');
+        }
+    }
+
+    handleTouchEnd(e) {
+        if (this.currentLevel !== 6) return;
         if (this.gameState !== 'reaction' && this.gameState !== 'waiting') return;
 
-        // Prevent default only if active game interaction to avoid scrolling issues elsewhere
-        if (e.cancelable && this.gameState === 'reaction') e.preventDefault();
-
-        // Swipe detection logic
-        if (inputType === 'touch') {
-            if (e.type === 'touchstart') {
-                this.touchStartX = e.changedTouches[0].screenX;
-                this.touchStartY = e.changedTouches[0].screenY;
-                return; // Wait for end
-            }
-            // We'll handle action on touchstart for simple taps if no swipe needed?
-            // Actually, to support swipes, we might need touchend.
-            // But for simple reaction, touchend adds latency.
-            // Strategy: For Lv6 (Swipe), use touchend. For others, use touchstart.
-        }
+        const touchEndX = e.changedTouches[0].screenX;
+        const diffX = touchEndX - this.touchStartX;
 
         let action = 'tap';
+        if (Math.abs(diffX) > 40) {
+            action = diffX > 0 ? 'right' : 'left';
+        }
+        this.processInput(action);
+    }
 
-        if (this.currentLevel === 6 && inputType === 'touch' && e.type !== 'touchstart') {
-            // Logic handled in touchend listener attached dynamically or globally?
-            // To keep it simple, let's just use a separate handler for swipes if needed.
-            // Re-implementing simple swipe detection here:
-            // Since we only bound touchstart, we need touchend for swipes.
+    processInput(action) {
+        if (this.gameState === 'waiting') {
+            this.handleFalseStart();
+            return;
+        }
+        if (this.gameState !== 'reaction') return;
+
+        const reactionTime = performance.now() - this.stimulusStart;
+        const target = this.currentStimulus.type;
+
+        let isCorrect = false;
+        let isMiss = false;
+
+        if (target === 'no-go') {
+            isCorrect = false;
+            isMiss = true;
+        } else if (target === 'go' && action === 'tap') {
+            isCorrect = true;
+        } else if (target === 'left' && action === 'left') {
+            isCorrect = true;
+        } else if (target === 'right' && action === 'right') {
+            isCorrect = true;
+        } else {
+            isCorrect = false;
+            isMiss = true;
+        }
+
+        const trialData = { reactionTime, isCorrect, isMiss };
+
+        if (this.currentLevel >= 5) {
+            this.gameState = 'math';
+            this.showMathProblem(trialData);
+        } else {
+            this.trials.push(trialData);
+            this.nextTrial();
+        }
+    }
+
+    handleFalseStart() {
+        this.timeoutIds.forEach(clearTimeout);
+        this.timeoutIds = [];
+        this.els.stimulusDisplay.style.background = '#ef4444'; // Red flash
+        setTimeout(() => {
+            this.trials.push({ reactionTime: null, isCorrect: false, isMiss: true });
+            this.nextTrial();
+        }, 500);
+    }
+
+    // --- Math Logic ---
+    showMathProblem(trialData) {
+        this.els.mathModal.classList.remove('hidden');
+
+        let q, a;
+        if (this.currentLevel === 5) {
+            const n1 = Math.floor(Math.random() * 9) + 1;
+            const n2 = Math.floor(Math.random() * 9) + 1;
+            q = `${n1} + ${n2}`;
+            a = n1 + n2;
+        } else {
+            const n1 = Math.floor(Math.random() * 9) + 1;
+            const n2 = Math.floor(Math.random() * 9) + 1;
+            q = `${n1} × ${n2}`;
+            a = n1 * n2;
+        }
+
+        document.getElementById('math-q').textContent = q;
+        const container = document.getElementById('math-options');
+        container.innerHTML = '';
+
+        const options = [a, a + 1, a - 1, a + 2].sort(() => Math.random() - 0.5);
+        options.forEach(opt => {
+            const btn = document.createElement('button');
+            btn.className = 'math-opt';
+            btn.textContent = opt;
+            btn.onclick = () => {
+                trialData.mathCorrect = (opt === a);
+                this.trials.push(trialData);
+                this.els.mathModal.classList.add('hidden');
+                this.nextTrial();
+            };
+            container.appendChild(btn);
+        });
+    }
+
+    // --- Scoring ---
+    finishGame() {
+        this.gameState = 'finished';
+        this.showScreen('result');
+
+        const valid = this.trials.filter(t => t.isCorrect && t.reactionTime);
+        const avg = valid.length ? valid.reduce((a, b) => a + b.reactionTime, 0) / valid.length : 0;
+        const correctCount = this.trials.filter(t => t.isCorrect && t.mathCorrect !== false).length;
+        const missCount = this.trials.filter(t => t.isMiss || t.mathCorrect === false).length;
+        const accuracy = correctCount / this.trials.length;
+
+        const multipliers = { 1: 1.0, 2: 1.2, 3: 1.4, 4: 1.6, 5: 1.8, 6: 2.0 };
+        const mult = multipliers[this.currentLevel];
+
+        let penalty = missCount * (this.currentLevel === 6 ? 1000 : 500);
+        let bonus = 0;
+
+        // SD Bonus for Lv5
+        if (this.currentLevel === 5 && valid.length > 1) {
+            const variance = valid.reduce((a, b) => a + Math.pow(b.reactionTime - avg, 2), 0) / valid.length;
+            if (Math.sqrt(variance) < 50) bonus = 1000;
+        }
+
+        let score = 0;
+        if (avg > 0) {
+            score = Math.floor(((10000 / avg) * accuracy * mult * 1000) - penalty + bonus);
+        }
+        score = Math.max(0, score);
+
+        // Render
+        document.getElementById('final-score').textContent = score;
+        document.getElementById('res-time').textContent = `${Math.round(avg)} ms`;
+        document.getElementById('res-acc').textContent = `${Math.round(accuracy * 100)}%`;
+        document.getElementById('res-miss').textContent = missCount;
+        document.getElementById('res-rank').textContent = '...';
+
+        this.saveScore(score, avg, correctCount, missCount);
+    }
+
+    async saveScore(score, avg, correct, miss) {
+        const user = auth.currentUser;
+        if (!user) return;
+
+        try {
+            await addDoc(collection(db, "scores"), {
+                userId: user.uid,
+                nickname: this.nickname || "Anonymous",
+                mode: "simple_reaction",
+                level: this.currentLevel,
+                score,
+                avgReaction: avg,
+                correctCount: correct,
+                wrongCount: miss,
+                trialCount: this.trials.length,
+                createdAt: serverTimestamp()
+            });
+            console.log("Score saved");
+            this.getPersonalRank(score);
+        } catch (e) {
+            console.error(e);
+        }
+    }
+
+    async getPersonalRank(myScore) {
+        // Simple client-side estimation or separate query could be done here.
+        // For now, we'll just leave it as '...' or implement a count query if needed.
+        // Given Firestore constraints, exact rank is hard without aggregation.
+        // We will just show "Saved" for now.
+        document.getElementById('res-rank').textContent = 'Saved';
+    }
+
+    // --- Ranking ---
+    showRanking() {
+        this.showScreen('ranking');
+        this.loadRanking(1);
+    }
+
+    async loadRanking(level) {
+        const table = document.getElementById('ranking-table');
+        table.innerHTML = '<tr><td>Loading...</td></tr>';
+
+        const q = query(
+            collection(db, "scores"),
+            where("mode", "==", "simple_reaction"),
+            where("level", "==", parseInt(level)),
+            orderBy("score", "desc"),
+            limit(20)
+        );
+
+        try {
+            const snap = await getDocs(q);
+            let html = `<tr><th>RANK</th><th>NAME</th><th>SCORE</th><th>TIME</th></tr>`;
+
+            let rank = 1;
+            snap.forEach(doc => {
+                const d = doc.data();
+                const isMe = auth.currentUser && d.userId === auth.currentUser.uid;
+                const rankClass = rank <= 3 ? `rank-${rank}` : '';
+
+                html += `<tr class="${isMe ? 'my-rank' : ''}">
+                    <td class="${rankClass}">#${rank}</td>
+                    <td>${d.nickname || 'Anonymous'}</td>
+                    <td style="font-weight:bold; color:white;">${d.score}</td>
+                    <td>${Math.round(d.avgReaction)}ms</td>
+                </tr>`;
+                rank++;
+            });
+            table.innerHTML = html;
+        } catch (e) {
+            console.error(e);
+            table.innerHTML = '<tr><td>Error loading ranking. Check console.</td></tr>';
         }
     }
 }
 
-// Re-implementing Input Handling for better Swipe support
-const app = new ReactionApp();
-
-// Add global touchend for swipe detection
-app.stimulusArea.addEventListener('touchend', (e) => {
-    if (app.gameState !== 'reaction' && app.gameState !== 'waiting') return;
-
-    const touchEndX = e.changedTouches[0].screenX;
-    const diffX = touchEndX - app.touchStartX;
-
-    // Determine action
-    let action = 'tap';
-    if (Math.abs(diffX) > 50) { // Threshold
-        action = diffX > 0 ? 'right' : 'left';
-    }
-
-    // If Level 6, we wait for swipe (touchend).
-    // If Level 1-5, we want instant tap (touchstart).
-    if (app.currentLevel === 6) {
-        app.processReaction(action);
-    }
-}, { passive: false });
-
-// Override handleInput for Tap-based levels (1-5)
-app.handleInput = function (e, inputType) {
-    if (this.gameState === 'waiting') {
-        // False start
-        this.processReaction('false-start');
-        return;
-    }
-
-    if (this.gameState !== 'reaction') return;
-
-    // For Lv 1-5, react on TouchStart/MouseDown immediately
-    if (this.currentLevel < 6) {
-        if (inputType === 'touch' && e.type === 'touchstart') {
-            this.processReaction('tap');
-        } else if (inputType === 'click') {
-            this.processReaction('tap');
-        }
-    }
-};
-
-app.processReaction = function (action) {
-    if (this.gameState !== 'reaction' && this.gameState !== 'waiting') return;
-
-    const reactionTime = performance.now() - this.stimulusStart;
-
-    // Check correctness
-    const target = this.currentStimulus.type; // go, no-go, left, right
-    let isCorrect = false;
-    let isMiss = false;
-
-    if (action === 'false-start') {
-        isCorrect = false;
-        isMiss = true; // Penalty
-        // Reset timeout
-        this.timeoutIds.forEach(clearTimeout);
-        this.timeoutIds = [];
-        alert("お手つき！"); // Simple feedback
-    } else if (target === 'no-go') {
-        // Should not react. If we are here, user reacted.
-        isCorrect = false;
-        isMiss = true;
-    } else if (target === 'go' && action === 'tap') {
-        isCorrect = true;
-    } else if (target === 'left' && action === 'left') {
-        isCorrect = true;
-    } else if (target === 'right' && action === 'right') {
-        isCorrect = true;
-    } else {
-        // Wrong action
-        isCorrect = false;
-        isMiss = true;
-    }
-
-    // Save trial data
-    const trialData = {
-        reactionTime: isCorrect ? reactionTime : null,
-        isCorrect: isCorrect,
-        isMiss: isMiss,
-        stimulus: this.currentStimulus
-    };
-
-    // Transition
-    if (this.currentLevel >= 5) {
-        // Show Math
-        this.gameState = 'math';
-        this.showMathProblem(trialData);
-    } else {
-        this.trials.push(trialData);
-        this.nextTrial();
-    }
-};
-
-app.showMathProblem = function (trialData) {
-    this.mathOverlay.style.display = 'flex';
-
-    let q, a, options;
-    if (this.currentLevel === 5) { // Addition
-        const n1 = Math.floor(Math.random() * 9) + 1;
-        const n2 = Math.floor(Math.random() * 9) + 1;
-        q = `${n1} + ${n2}`;
-        a = n1 + n2;
-    } else { // Multiplication (Lv6)
-        const n1 = Math.floor(Math.random() * 9) + 1;
-        const n2 = Math.floor(Math.random() * 9) + 1;
-        q = `${n1} × ${n2}`;
-        a = n1 * n2;
-    }
-
-    // Generate options
-    options = [a, a + 1, a - 1, a + 2].sort(() => Math.random() - 0.5);
-
-    document.getElementById('math-problem').textContent = `${q} = ?`;
-    const container = document.getElementById('math-options');
-    container.innerHTML = '';
-
-    options.forEach(opt => {
-        const btn = document.createElement('button');
-        btn.className = 'btn math-btn';
-        btn.textContent = opt;
-        btn.onclick = () => this.handleMathAnswer(opt === a, trialData);
-        container.appendChild(btn);
-    });
-};
-
-app.handleMathAnswer = function (isCorrect, trialData) {
-    trialData.mathCorrect = isCorrect;
-    this.trials.push(trialData);
-    this.mathOverlay.style.display = 'none';
-    this.nextTrial();
-};
-
-app.finishGame = function () {
-    this.gameState = 'finished';
-    this.showScreen('result');
-    this.calculateScore();
-};
-
-app.calculateScore = function () {
-    // Filter valid reactions
-    const validReactions = this.trials.filter(t => t.isCorrect && t.reactionTime !== null);
-    const avgReaction = validReactions.length > 0
-        ? validReactions.reduce((a, b) => a + b.reactionTime, 0) / validReactions.length
-        : 0;
-
-    const correctCount = this.trials.filter(t => t.isCorrect && (t.mathCorrect !== false)).length;
-    const missCount = this.trials.filter(t => t.isMiss || t.mathCorrect === false).length;
-    const correctRate = correctCount / this.trials.length;
-
-    // Multipliers
-    const multipliers = { 1: 1.0, 2: 1.2, 3: 1.4, 4: 1.6, 5: 1.8, 6: 2.0 };
-    const levelMult = multipliers[this.currentLevel];
-
-    // Penalty
-    let penalty = missCount * 500;
-    if (this.currentLevel === 6) penalty = missCount * 1000;
-
-    // Standard Deviation Bonus (Lv5)
-    let sdBonus = 0;
-    if (this.currentLevel === 5 && validReactions.length > 1) {
-        const variance = validReactions.reduce((a, b) => a + Math.pow(b.reactionTime - avgReaction, 2), 0) / validReactions.length;
-        const sd = Math.sqrt(variance);
-        if (sd < 50) sdBonus = 1000;
-        else if (sd < 100) sdBonus = 500;
-    }
-
-    let score = 0;
-    if (avgReaction > 0) {
-        score = (10000 / avgReaction) * correctRate * levelMult * 1000; // Scaled up
-        score -= penalty;
-        score += sdBonus;
-    }
-    score = Math.max(0, Math.floor(score));
-
-    // Display
-    document.getElementById('res-score').textContent = score;
-    document.getElementById('res-avg').textContent = `${Math.round(avgReaction)} ms`;
-    document.getElementById('res-accuracy').textContent = `${Math.round(correctRate * 100)}%`;
-    document.getElementById('res-miss').textContent = missCount;
-
-    // Save to Firebase
-    this.saveScore({
-        score,
-        avgReaction,
-        correctCount,
-        wrongCount: missCount,
-        trialCount: this.trials.length,
-        fastest: validReactions.length ? Math.min(...validReactions.map(t => t.reactionTime)) : 0,
-        slowest: validReactions.length ? Math.max(...validReactions.map(t => t.reactionTime)) : 0
-    });
-};
-
-app.saveScore = async function (data) {
-    const user = auth.currentUser;
-    if (!user) return;
-
-    try {
-        await addDoc(collection(db, "scores"), {
-            userId: user.uid,
-            mode: "simple_reaction",
-            level: this.currentLevel,
-            ...data,
-            createdAt: serverTimestamp()
-        });
-        console.log("Score saved!");
-    } catch (e) {
-        console.error("Error saving score: ", e);
-    }
-};
-
-app.showRanking = function () {
-    this.showScreen('ranking');
-    this.loadRanking(1); // Default Lv1
-};
-
-app.loadRanking = async function (level) {
-    const list = document.getElementById('ranking-list');
-    list.innerHTML = '読み込み中...';
-
-    const q = query(
-        collection(db, "scores"),
-        where("mode", "==", "simple_reaction"),
-        where("level", "==", parseInt(level)),
-        orderBy("score", "desc"),
-        limit(10)
-    );
-
-    try {
-        const querySnapshot = await getDocs(q);
-        let html = `<table><tr><th>順位</th><th>スコア</th><th>平均反応</th><th>正答率</th><th>日付</th></tr>`;
-
-        let rank = 1;
-        querySnapshot.forEach((doc) => {
-            const d = doc.data();
-            const date = d.createdAt ? new Date(d.createdAt.toDate()).toLocaleDateString() : '-';
-            const isMyScore = auth.currentUser && d.userId === auth.currentUser.uid;
-
-            html += `<tr class="${isMyScore ? 'highlight-row' : ''}">
-                <td>${rank}</td>
-                <td>${d.score}</td>
-                <td>${Math.round(d.avgReaction)} ms</td>
-                <td>${Math.round((d.correctCount / d.trialCount) * 100)}%</td>
-                <td>${date}</td>
-            </tr>`;
-            rank++;
-        });
-        html += '</table>';
-
-        if (querySnapshot.empty) {
-            html = '<p>まだ記録がありません。</p>';
-        }
-
-        list.innerHTML = html;
-    } catch (e) {
-        console.error(e);
-        list.innerHTML = '<p>ランキングの取得に失敗しました。</p>';
-    }
-};
-
-// Export to window for HTML access
-window.app = app;
+window.app = new ReactionApp();
