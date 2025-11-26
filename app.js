@@ -377,7 +377,7 @@ class ReactionApp {
 
         try {
             const snap = await getDocs(q);
-            let html = `<tr><th>RANK</th><th>NAME</th><th>SCORE</th><th>TIME</th></tr>`;
+            let html = `<tr><th>順位</th><th>名前</th><th>スコア</th><th>タイム</th></tr>`;
 
             let rank = 1;
             snap.forEach(doc => {
